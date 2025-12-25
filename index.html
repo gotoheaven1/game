@@ -3,56 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>THE ROOM: 1978 - GHOST OS</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <title>인생 시뮬레이터: 더 빌리지</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div id="game-container">
+        <header>
+            <div id="time-display">1년 1월 1일 0시</div>
+            <div id="town-stat">마을 인구: 0명</div>
+        </header>
 
-    <div class="room-background">
-        
-        <div class="monitor-casing">
-            <div class="monitor-brand">ZENITH DATA SYSTEMS 1978</div>
-            
-            <div class="crt-screen">
-                <div class="crt-overlay"></div>
-                
-                <div class="screen-content">
-                    <header>
-                        <span class="system-status">■ CONNECTED: NODE_78</span>
-                        <span class="system-time" id="clock">00:00:00</span>
-                    </header>
-                    
-                    <div id="game-output" class="output-area"></div>
+        <main>
+            <section id="char-panel">
+                <h3>주민 명부</h3>
+                <div id="char-list"></div>
+                <button class="primary-btn" onclick="createNewCharacter()">새 주민 영입</button>
+            </section>
 
-                    <div class="input-area">
-                        <span class="prompt">USER@78:~$</span>
-                        <input type="text" id="user-input" autocomplete="off" spellcheck="false" autofocus>
-                        <span class="cursor">_</span>
-                    </div>
-
-                    <footer>
-                        <div id="status-bar">
-                            <span class="status-item">TARGET: <span id="current-target" class="highlight">NONE</span></span>
-                            <span class="status-item">TRUST: <span id="affinity-score" class="highlight">0</span>%</span>
-                            <span class="status-item">BAG: <span id="inventory-list" class="highlight">EMPTY</span></span>
-                        </div>
-                    </footer>
+            <section id="world-panel">
+                <div id="location-header">
+                    <h2 id="loc-name">마을 광장</h2>
+                    <p id="loc-desc">다양한 사람들이 모이는 곳입니다.</p>
                 </div>
-            </div>
-            
-            <div class="monitor-controls">
-                <div class="power-btn"></div>
-                <div class="power-led"></div>
-            </div>
+                <div id="action-zone">
+                    <div id="special-actions"></div>
+                    <div class="movement-grid">
+                        <button onclick="travel('Home')">🏠 집</button>
+                        <button onclick="travel('Hospital')">🏥 병원</button>
+                        <button onclick="travel('Court')">⚖️ 법정</button>
+                        <button onclick="travel('School')">🏫 학교</button>
+                        <button onclick="travel('Park')">🌳 공원</button>
+                        <button onclick="travel('Bar')">🍻 식당/바</button>
+                    </div>
+                </div>
+                <div id="property-shop">
+                    <h4>부동산/상점</h4>
+                    <button onclick="buyProperty('Apartment')">아파트(5만)</button>
+                    <button onclick="buyProperty('House')">단독주택(12만)</button>
+                </div>
+            </section>
+
+            <section id="log-panel">
+                <h3>마을 뉴스</h3>
+                <div id="event-log"></div>
+            </section>
+        </main>
+    </div>
+
+    <div id="modal-overlay">
+        <div id="event-modal">
+            <h2 id="modal-title">알림</h2>
+            <p id="modal-content"></p>
+            <button onclick="closeModal()">확인</button>
         </div>
     </div>
-    
-    <audio id="boot-sound" src=""></audio>
-    <audio id="type-sound" src=""></audio>
 
-    <script src="game.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
