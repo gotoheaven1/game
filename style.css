@@ -119,3 +119,50 @@ footer {
 .char-victor { color: #aaffaa; }
 .char-elena { color: #ddaaff; }
 .char-ghost { color: #cccccc; font-style: italic; }
+/* 커서가 더 잘 보이도록 박스 형태로 변경 */
+.cursor {
+    display: inline-block;
+    width: 12px;
+    height: 20px;
+    background-color: var(--phosphor-green);
+    animation: blink 1s step-end infinite;
+    vertical-align: text-bottom;
+    margin-left: 2px;
+}
+
+/* 입력창 포커스 시 아웃라인 제거 (어차피 전체 화면이 입력창 느낌이므로) */
+input[type="text"]:focus {
+    outline: none;
+}
+/* === 이스터 에그 & 글리치 효과 === */
+
+/* 화면 전체가 흔들리는 효과 */
+@keyframes shake {
+    0% { transform: translate(1px, 1px) rotate(0deg); }
+    10% { transform: translate(-1px, -2px) rotate(-1deg); }
+    20% { transform: translate(-3px, 0px) rotate(1deg); }
+    30% { transform: translate(3px, 2px) rotate(0deg); }
+    40% { transform: translate(1px, -1px) rotate(1deg); }
+    50% { transform: translate(-1px, 2px) rotate(-1deg); }
+    60% { transform: translate(-3px, 1px) rotate(0deg); }
+    70% { transform: translate(3px, 1px) rotate(-1deg); }
+    80% { transform: translate(-1px, -1px) rotate(1deg); }
+    90% { transform: translate(1px, 2px) rotate(0deg); }
+    100% { transform: translate(1px, -2px) rotate(-1deg); }
+}
+
+/* 붉은색 경고 모드 */
+.glitch-mode .screen-container {
+    animation: shake 0.5s; /* 0.5초 동안 흔들림 */
+    animation-iteration-count: infinite; /* 계속 흔들림 */
+}
+
+.glitch-mode {
+    --phosphor-green: #ff0000; /* 글씨를 빨간색으로 변경 */
+    --phosphor-dim: #550000;
+}
+
+/* 색상 반전 (Matrix 느낌) */
+.invert-mode {
+    filter: invert(1);
+}
