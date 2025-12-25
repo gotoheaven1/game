@@ -3,28 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>인생 시뮬레이터: 더 빌리지</title>
+    <title>Life Sim: The Rivalry & Politics</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="game-container">
         <header>
             <div id="time-display">1년 1월 1일 0시</div>
-            <div id="town-stat">마을 인구: 0명</div>
+            <div id="village-info">마을 인구: 0명 | 현직 이장: 없음</div>
         </header>
 
         <main>
             <section id="char-panel">
-                <h3>주민 명부</h3>
+                <h3>주민 리스트</h3>
                 <div id="char-list"></div>
-                <button class="primary-btn" onclick="createNewCharacter()">새 주민 영입</button>
+                <button class="btn-primary" onclick="createNewCharacter()">새 주민 영입</button>
             </section>
 
             <section id="world-panel">
-                <div id="location-header">
+                <div id="location-info">
                     <h2 id="loc-name">마을 광장</h2>
-                    <p id="loc-desc">다양한 사람들이 모이는 곳입니다.</p>
+                    <p id="loc-desc">환영합니다.</p>
                 </div>
+                <hr>
                 <div id="action-zone">
                     <div id="special-actions"></div>
                     <div class="movement-grid">
@@ -36,15 +37,16 @@
                         <button onclick="travel('Bar')">🍻 식당/바</button>
                     </div>
                 </div>
+                <hr>
                 <div id="property-shop">
-                    <h4>부동산/상점</h4>
-                    <button onclick="buyProperty('Apartment')">아파트(5만)</button>
-                    <button onclick="buyProperty('House')">단독주택(12만)</button>
+                    <h4>부동산/정책</h4>
+                    <button onclick="buyProperty('Apartment')">아파트 구매(5만)</button>
+                    <button onclick="buyProperty('House')">단독주택 구매(12만)</button>
                 </div>
             </section>
 
             <section id="log-panel">
-                <h3>마을 뉴스</h3>
+                <h3>마을 실시간 뉴스</h3>
                 <div id="event-log"></div>
             </section>
         </main>
