@@ -1,287 +1,33 @@
-/* --- 1. 기본 설정 및 폰트 --- */
-@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-
 :root {
-    --phosphor-main: #33ff33;   /* 기본 형광 초록 */
-    --phosphor-dim: #1a551a;    /* 어두운 초록 (배경, 테두리 등) */
-    --phosphor-bright: #ccffcc; /* 밝은 초록 (강조) */
-    --screen-bg: #0a0a0a;       /* CRT 화면 배경 */
-    --casing-color: #2b2b2b;    /* 모니터 외관 색상 */
-    --room-bg: #111111;         /* 방 배경 */
+    --primary: #2c3e50; --accent: #e74c3c; --success: #27ae60;
+    --bg: #ecf0f1; --panel: #ffffff;
 }
 
-* {
-    box-sizing: border-box;
-}
+body { font-family: 'Pretendard', sans-serif; background: var(--bg); margin: 0; padding: 10px; overflow: hidden; }
+#game-container { display: flex; flex-direction: column; height: 98vh; gap: 10px; }
 
-body {
-    margin: 0;
-    padding: 0;
-    background-color: var(--room-bg);
-    color: var(--phosphor-main);
-    font-family: 'VT323', monospace;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    font-size: 22px; /* 가독성을 위해 폰트 크기 키움 */
-}
+header { background: var(--primary); color: white; padding: 15px; border-radius: 10px; display: flex; justify-content: space-between; font-weight: bold; }
 
-/* --- 2. 물리적 모니터 외관 (The Hardware) --- */
-.room-background {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    /* 방의 어두운 분위기 비네팅 */
-    background: radial-gradient(circle at center, #222 0%, #000 90%);
-}
+main { display: grid; grid-template-columns: 300px 1fr 350px; gap: 10px; flex-grow: 1; overflow: hidden; }
 
-.monitor-casing {
-    background-color: var(--casing-color);
-    padding: 25px;
-    border-radius: 20px;
-    box-shadow: 
-        inset 0 0 10px #000,     /* 안쪽 그림자 */
-        0 20px 50px rgba(0,0,0,0.8); /* 모니터 그림자 */
-    width: 95vw;
-    max-width: 1000px;
-    height: 90vh;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    border: 1px solid #444;
-}
+section { background: var(--panel); border-radius: 10px; padding: 15px; display: flex; flex-direction: column; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
 
-.monitor-brand {
-    color: #666;
-    font-size: 16px;
-    text-transform: uppercase;
-    letter-spacing: 3px;
-    margin-bottom: 10px;
-    font-family: sans-serif;
-    font-weight: bold;
-    text-shadow: 1px 1px 0 #000;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+#char-list { flex-grow: 1; overflow-y: auto; }
+.char-card { border: 1px solid #ddd; padding: 10px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+.char-card:hover { border-color: var(--accent); }
+.char-card.active { background: #fdf2f2; border-color: var(--accent); }
+.char-card.dead { opacity: 0.6; background: #95a5a6; text-decoration: line-through; }
 
-/* 전원 LED 깜빡임 */
-.power-led {
-    width: 8px;
-    height: 8px;
-    background-color: #ff3333;
-    border-radius: 50%;
-    box-shadow: 0 0 5px #ff3333;
-    animation: pulse-led 3s infinite;
-}
+#event-log { flex-grow: 1; overflow-y: auto; font-size: 0.9em; border-top: 1px solid #eee; padding-top: 10px; }
+.log-entry { margin-bottom: 6px; padding: 4px; border-bottom: 1px solid #f8f8f8; }
+.log-entry.warning { color: #e67e22; font-weight: bold; }
+.log-entry.critical { color: var(--accent); font-weight: bold; }
 
-@keyframes pulse-led {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-}
+.movement-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 15px; }
+button { padding: 10px; border: none; border-radius: 5px; cursor: pointer; background: #3498db; color: white; }
+button:hover { filter: brightness(1.1); }
 
-/* --- 3. CRT 화면 (The Screen) --- */
-.crt-screen {
-    background-color: var(--screen-bg);
-    flex-grow: 1;
-    border-radius: 4px; /* 화면 모서리 곡률 */
-    position: relative;
-    overflow: hidden;
-    border: 15px solid #1a1a1a; /* 베젤 안쪽 깊이감 */
-    box-shadow: inset 0 0 80px rgba(0,0,0,0.6);
-}
+/* 모달 스타일 */
+#modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
+#event-modal { background: white; padding: 30px; border-radius: 15px; max-width: 400px; text-align: center; border: 4px solid var(--accent); }
 
-/* CRT 스캔라인 및 효과 */
-.crt-overlay {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(
-        rgba(18, 16, 16, 0) 50%, 
-        rgba(0, 0, 0, 0.25) 50%
-    ), linear-gradient(
-        90deg, 
-        rgba(255, 0, 0, 0.06), 
-        rgba(0, 255, 0, 0.02), 
-        rgba(0, 0, 255, 0.06)
-    );
-    background-size: 100% 4px, 6px 100%;
-    pointer-events: none;
-    z-index: 100;
-    opacity: 0.6;
-}
-
-/* 화면 내용 컨테이너 */
-.screen-content {
-    padding: 20px;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    z-index: 2;
-    position: relative;
-    /* 텍스트 번짐 효과 (Glow) */
-    text-shadow: 0 0 4px var(--phosphor-dim), 0 0 2px var(--phosphor-dim); 
-}
-
-/* --- 4. UI 레이아웃 (Header, Output, Input, Footer) --- */
-header, footer {
-    border-bottom: 2px solid var(--phosphor-dim);
-    padding-bottom: 10px;
-    margin-bottom: 10px;
-    display: flex;
-    justify-content: space-between;
-}
-
-footer {
-    border-bottom: none;
-    border-top: 2px solid var(--phosphor-dim);
-    padding-top: 10px;
-    margin-top: 10px;
-    margin-bottom: 0;
-    font-size: 0.9em;
-}
-
-.highlight {
-    color: #fff;
-    text-shadow: 0 0 8px #fff;
-}
-
-.output-area {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding-right: 10px;
-    margin-bottom: 10px;
-    /* 스크롤바 숨기기 */
-    scrollbar-width: none; 
-}
-.output-area::-webkit-scrollbar { display: none; }
-
-.input-area {
-    display: flex;
-    align-items: center;
-    background: rgba(0, 255, 0, 0.05); /* 입력창 배경 살짝 강조 */
-    padding: 5px;
-}
-
-.prompt {
-    margin-right: 10px;
-    color: var(--phosphor-main);
-}
-
-input[type="text"] {
-    background: transparent;
-    border: none;
-    color: var(--phosphor-bright);
-    font-family: 'VT323', monospace;
-    font-size: 22px;
-    flex-grow: 1;
-    outline: none;
-    caret-color: transparent; /* 커서 숨김 (수동 구현 사용) */
-    text-transform: uppercase;
-    text-shadow: 0 0 5px var(--phosphor-main);
-}
-
-.cursor {
-    display: inline-block;
-    width: 12px;
-    height: 24px;
-    background-color: var(--phosphor-main);
-    animation: blink 1s step-end infinite;
-    vertical-align: sub;
-}
-@keyframes blink { 50% { opacity: 0; } }
-
-
-/* --- 5. 채팅 메시지 스타일 (Chat Bubbles) --- */
-.chat-bubble {
-    padding: 8px 12px;
-    margin: 6px 0;
-    border-radius: 2px;
-    max-width: 85%;
-    line-height: 1.3;
-    display: table; /* 내용만큼만 너비 차지 */
-    clear: both;
-    position: relative;
-    word-wrap: break-word;
-}
-
-/* 캐릭터 메시지 (왼쪽) */
-.chat-left {
-    float: left;
-    border-left: 4px solid var(--phosphor-main);
-    background: rgba(51, 255, 51, 0.1);
-    margin-right: 20%;
-}
-
-/* 사용자 메시지 (오른쪽) */
-.chat-right {
-    float: right;
-    border-right: 4px solid var(--phosphor-main);
-    text-align: right;
-    background: rgba(51, 255, 51, 0.2);
-    margin-left: 20%;
-    color: var(--phosphor-bright);
-}
-
-.name-tag {
-    font-size: 0.8em;
-    display: block;
-    margin-bottom: 4px;
-    opacity: 0.9;
-    font-weight: bold;
-    letter-spacing: 1px;
-}
-
-/* 시스템 메시지 */
-.sys-msg {
-    color: #ffff33;
-    text-align: center;
-    margin: 15px 0;
-    font-style: italic;
-    display: block;
-    clear: both;
-    border-top: 1px dashed #555;
-    border-bottom: 1px dashed #555;
-    padding: 5px 0;
-}
-
-.error-msg {
-    color: #ff5555;
-    font-weight: bold;
-    text-align: center;
-    clear: both;
-    display: block;
-    text-shadow: 0 0 5px red;
-}
-
-
-/* --- 6. 특수 효과 (Glitch & Invert) --- */
-@keyframes shake {
-    0% { transform: translate(1px, 1px) rotate(0deg); }
-    10% { transform: translate(-1px, -2px) rotate(-1deg); }
-    20% { transform: translate(-3px, 0px) rotate(1deg); }
-    30% { transform: translate(3px, 2px) rotate(0deg); }
-    40% { transform: translate(1px, -1px) rotate(1deg); }
-    50% { transform: translate(-1px, 2px) rotate(-1deg); }
-    60% { transform: translate(-3px, 1px) rotate(0deg); }
-    70% { transform: translate(3px, 1px) rotate(-1deg); }
-    80% { transform: translate(-1px, -1px) rotate(1deg); }
-    90% { transform: translate(1px, 2px) rotate(0deg); }
-    100% { transform: translate(1px, -2px) rotate(-1deg); }
-}
-
-.glitch-mode .screen-content {
-    animation: shake 0.5s infinite;
-    color: red !important;
-    text-shadow: 3px 0 blue, -3px 0 red;
-}
-.glitch-mode {
-    --phosphor-main: #ff0000;
-}
-
-.invert-mode .crt-screen {
-    filter: invert(1);
-}
