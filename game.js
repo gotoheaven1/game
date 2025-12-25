@@ -1,122 +1,174 @@
 
   /* =========================================
-   [THE ROOM: 1978] GAME ENGINE v2.0
+   [THE ROOM: 1978] GAME ENGINE v3.0
+   - Improved NLP (Smart Dialogue)
+   - Archive Search System
+   - Hint UI System
    ========================================= */
 
-// --- 0. CSS Styles Injection (UI 업그레이드) ---
-// 실제 채팅방 느낌을 내기 위해 스타일을 동적으로 추가합니다.
+// --- 0. CSS Styles Injection (말풍선 및 UI 개선) ---
 const styleSheet = document.createElement("style");
 styleSheet.innerText = `
-    .chat-bubble {
-        padding: 8px 12px;
-        margin: 5px 0;
-        border-radius: 4px;
-        max-width: 80%;
-        line-height: 1.4;
-        display: inline-block;
-        clear: both;
-    }
-    .chat-left { float: left; border-left: 3px solid var(--phosphor-green); background: rgba(0, 255, 0, 0.1); }
-    .chat-right { float: right; border-right: 3px solid var(--phosphor-green); text-align: right; background: rgba(0, 255, 0, 0.2); }
-    .sys-msg { color: #aaa; text-align: center; margin: 10px 0; font-style: italic; clear: both; display: block; }
-    .error-msg { color: red; font-weight: bold; clear: both; display: block; }
-    
-    /* 캐릭터별 색상 강조 (이름표) */
-    .name-tag { font-weight: bold; margin-bottom: 2px; display: block; font-size: 0.9em; opacity: 0.8; }
+    .chat-bubble { padding: 8px 12px; margin: 6px 0; border-radius: 4px; max-width: 85%; line-height: 1.4; display: table; clear: both; position: relative; }
+    .chat-left { float: left; border-left: 4px solid var(--phosphor-main); background: rgba(51, 255, 51, 0.1); margin-right: 20%; }
+    .chat-right { float: right; border-right: 4px solid var(--phosphor-main); text-align: right; background: rgba(51, 255, 51, 0.2); margin-left: 20%; color: #ccffcc; }
+    .sys-msg { color: #ffff33; text-align: center; margin: 15px 0; font-style: italic; display: block; clear: both; border-top: 1px dashed #444; border-bottom: 1px dashed #444; padding: 5px 0; }
+    .hint-box { border: 1px solid #1a551a; background: #051505; color: #88ff88; padding: 10px; margin: 10px 0; font-size: 0.9em; display: block; clear: both; }
+    .error-msg { color: #ff5555; font-weight: bold; display: block; clear: both; text-align: center;}
+    .name-tag { font-size: 0.8em; display: block; margin-bottom: 4px; opacity: 0.9; font-weight: bold; letter-spacing: 1px; }
 `;
 document.head.appendChild(styleSheet);
 
-
 // --- 1. Game State & Data ---
 const state = {
-    screen: 'BOOT', // BOOT, LOGIN, DESKTOP, PUBLIC_CHAT, PRIVATE_CHAT
+    screen: 'BOOT', 
     connectedChar: null, 
     inventory: [],
-    cluesFound: [],
-    affinity: { Arthur: 10, Daisy: 10, Victor: 10, Elena: 10 },
-    miniGameActive: false,
-    miniGameTarget: null,
-    gameEnded: false,
-    introWatched: false // 채팅방 입장 이벤트 봤는지 여부
+    cluesFound: [], // 발견한 단서들
+    memo: [], // 유저 메모
+    affinity: { Arthur: 20, Daisy: 20, Victor: 10, Elena: 10 }, // 초기 호감도 소폭 상승
+    failCount: 0, // 대화 실패 카운트 (힌트 제공용)
+    introWatched: false
 };
 
-// 캐릭터 데이터베이스
+// [스마트 대화 데이터베이스]
+// keywords 배열 안에 있는 단어 중 하나라도 포함되면 해당 반응을 보임
 const characters = {
     'Arthur': {
         job: '전직 군인',
+        color: '#aaffaa',
         style: '[ . . ]',
-        color: '#aaffaa', // 연한 초록
-        intro: "신입인가? 규율을 지키도록. 이상.",
-        desc: '말투가 딱딱하고 군대 용어를 쓴다.',
-        keywords: {
-            '안녕': "충성. 용무 있나? [ . . ]",
-            '피해자': "그 친구? 규율이 없었어. 언젠가 사고 칠 줄 알았지. [ . . ]",
-            '훈장': "!! 자네 그걸 어디서... (감격) [ O . O ] 자네는 명예를 아는군.",
-            '사건': "오후 10시. 나는 초소... 아니, 내 방에서 뉴스를 보고 있었다. [ . . ]"
-        },
-        gift: '훈장',
-        weakness: '명예'
+        topics: ['알리바이', '피해자', '훈장', '목격자'], // 유저에게 보여줄 힌트 주제
+        dialogue: [
+            {
+                keys: ['안녕', '반가워', 'ㅎㅇ', 'hello'],
+                text: "충성. 용무가 없다면 통신 보안을 유지하도록. [ . . ]"
+            },
+            {
+                keys: ['알리바이', '어디', '장소', '시간', '10시'],
+                text: "그날 밤 10시? 내 방에서 뉴스를 보고 있었다. 독신남의 밤은 조용하지. 증인은... 뉴스 앵커뿐이다. [ . . ]",
+                clue: "Arthur:뉴스시청"
+            },
+            {
+                keys: ['피해자', '죽은', '사람', '관계', '그 녀석'],
+                text: "그 친구? 규율이라곤 없는 녀석이었지. 언젠가 사고 칠 줄 알았다. 하지만 죽을 죄를 지었는지는... 모르겠군. [ . . ]"
+            },
+            {
+                keys: ['훈장', '가슴', '배지', '명예'],
+                text: "!! 자네 이걸 알아보나? (감격) [ O . O ] 1950년 겨울, 혹한 속에서 얻은 훈장이다. 자네는 '명예'를 아는군."
+            },
+            {
+                keys: ['목격', '본거', '수상', '누구'],
+                text: "수상한 점이라... 글쎄, 옆방의 Daisy가 그날따라 조용하더군. 평소엔 음악을 크게 틀어놓는데 말이야. [ . . ]",
+                clue: "Daisy:조용함"
+            }
+        ],
+        default: [
+            "질문이 명확하지 않군. 다시 말해봐. [ . . ]",
+            "군대에서는 용건만 간단히 한다. [ . . ]"
+        ]
     },
     'Daisy': {
         job: '히피',
+        color: '#ffccff',
         style: '{~~✿~~}',
-        color: '#ffccff', // 연한 핑크
-        intro: "와우, 새로운 바이브네? 반가워 친구! 평화~",
-        desc: '꽃과 평화를 사랑하는 자유로운 영혼.',
-        keywords: {
-            '안녕': "헤이~ 반가워 형제여! {~~✿~~}",
-            '피해자': "그 사람은 항상 짙은 향수 냄새가 났어... 머리가 아플 정도로. {~~-_-~~}",
-            'LP': "오 마이 갓! 비틀즈 초판?! 너 진짜 멋쟁이구나! {~~^!^~~}",
-            '법': "우린 그런 거에 얽매이지 않아, man. 분위기 깨지 마. {~~;_;~~}"
-        },
-        gift: 'LP',
-        weakness: '자유'
+        topics: ['음악', '향수', '평화', '사건 당일'],
+        dialogue: [
+            {
+                keys: ['안녕', 'hi', '반가워'],
+                text: "헤이~ 새로운 바이브네? 사랑과 평화, 형제여! {~~✿~~}"
+            },
+            {
+                keys: ['알리바이', '어디', '뭐했어', '당일', '조용'],
+                text: "난 그냥 명상 중이었어... 우주의 기운을 느끼고 있었지. Arthur 아저씨는 내가 조용해서 이상했대? 풋, 명상은 원래 조용한 거야. {~~-_-~~}"
+            },
+            {
+                keys: ['향수', '냄새', '피해자', '관계'],
+                text: "그 남자는 항상 짙은 코롱 냄새가 났어. 자연의 향기가 아니야. 화학 물질 냄새... 머리가 아플 정도였다고. {~~>_<~~}",
+                clue: "피해자:화학냄새"
+            },
+            {
+                keys: ['lp', '음악', '비틀즈', '노래'],
+                text: "오 마이 갓! 너 음악 좀 아는구나? 비틀즈 초판이 있어? 그거라면 내 영혼도 팔 수 있어! {~~^!^~~}"
+            }
+        ],
+        default: [
+            "무슨 말인지 모르겠어 man, 좀 더 feel을 담아서 말해봐. {~~?~~}",
+            "네 오라(Aura)가 좀 탁한데? 다시 말해줄래?"
+        ]
     },
     'Victor': {
         job: '공학도',
+        color: '#ccccff',
         style: '( ; _ ; )',
-        color: '#ccccff', // 연한 파랑
-        intro: "누.. 누구세요? 제 코드 건드리지 마세요..",
-        desc: '숫자에 집착하며 항상 불안해 보인다.',
-        keywords: {
-            '안녕': "누... 누구세요? 해커? ( ; _ ; )",
-            '피해자': "그 사람 돈 계산이... 3.14159... 아니, 좀 이상했어. ( O_O )",
-            '계산기': "내... 내 텍사스 인스트루먼트! 찾아줬구나! ( ^_^ )",
-            '알리바이': "난... 난 코딩 중이었어! 컴파일 로그 보여줄 수 있어!"
-        },
-        gift: '계산기',
-        weakness: '논리'
+        topics: ['계산기', '로그', '돈', '서버'],
+        dialogue: [
+            {
+                keys: ['안녕', '누구'],
+                text: "히익! 제... 제 코드 건드리지 마세요... 전 그냥 엔지니어라구요... ( ; _ ; )"
+            },
+            {
+                keys: ['알리바이', '어디', '작업', '컴파일'],
+                text: "난 밤새 코딩 중이었어! 컴파일 로그 보여줄 수 있어! 34번 라인에서 에러가 나서... 멘붕이었다고! ( O_O )"
+            },
+            {
+                keys: ['돈', '채무', '피해자', '관계'],
+                text: "그 사람이랑은... 그냥... 숫자 계산 좀 도와준 것뿐이야. 그 사람, 돈 계산이 3.14159... 아니, 좀 이상했어. ( ._. )",
+                clue: "피해자:돈문제"
+            },
+            {
+                keys: ['로그', '서버', '기록', '해킹'],
+                text: "서버 로그? 그건 1급 기밀인데... 하지만 계산기를 찾아준다면 보여줄 수도 있어... ( ^_^ )"
+            },
+            {
+                keys: ['계산기', 'ti-80', '물건'],
+                text: "내 텍사스 인스트루먼트!! 잃어버려서 아무것도 못 하고 있었는데... 찾아주면 정말 고마울 거야! ( ㅠ_ㅠ )"
+            }
+        ],
+        default: [
+            "Syntax Error... 무슨 말인지 해석이 안 돼요. ( ; _ ; )",
+            "입력값이 잘못되었습니다. 다시 시도하세요."
+        ]
     },
     'Elena': {
         job: '배우',
+        color: '#ffffcc',
         style: '{* - *}',
-        color: '#ffffcc', // 연한 노랑
-        intro: "어머, 관객이 늘었네? 엘레나의 무대에 온 걸 환영해.",
-        desc: '자신을 3인칭으로 부르는 허영심 많은 배우.',
-        keywords: {
-            '안녕': "어머, 엘레나를 보러 온 팬인가요? {* ^ *}",
-            '피해자': "흥, 그 촌스러운 남자? 내 무대 의상을 밟았었지. {* - *}",
-            '거울': "어머! 너무 예쁘다. 역시 엘레나에겐 최고급이 어울려. {* O *}",
-            '흉': "데이지 걔는... 씻기는 하는지 몰라. 냄새나. {* > < *}"
-        },
-        gift: '거울',
-        weakness: '칭찬'
-    },
-    'Ghost': {
-        style: '< SYSTEM >',
-        color: '#ffffff',
-        intro: "...",
-        keywords: {} 
+        topics: ['거울', '무대', '의상', '피해자'],
+        dialogue: [
+            {
+                keys: ['안녕', '팬'],
+                text: "어머, 엘레나를 보러 온 관객인가요? 사인은 나중에 해줄게요. {* ^ *}"
+            },
+            {
+                keys: ['피해자', '남자', '관계', '죽음'],
+                text: "흥, 그 촌스러운 남자? 내 소중한 무대 의상을 밟았었지. 사과도 제대로 안 했다니까? {* - *}",
+                clue: "Elena:원한"
+            },
+            {
+                keys: ['거울', '예쁘다', '미모', '아름'],
+                text: "어머! 역시 보는 눈이 있네. 엘레나는 이 거울 없이는 연기에 집중할 수가 없어. {* O *}"
+            },
+            {
+                keys: ['알리바이', '어디', '연기'],
+                text: "난 내 방에서 대본 연습 중이었어. '죽느냐 사느냐 그것이 문제로다...' 완벽했지. {* ~ *}"
+            }
+        ],
+        default: [
+            "그런 재미없는 얘기는 대본에 없는데? {* - *}",
+            "엘레나는 지루한 건 딱 질색이야."
+        ]
     }
 };
 
-const items = [
-    { name: '훈장', id: 'medal', desc: '녹이 슨 낡은 훈장.' },
-    { name: 'LP', id: 'lp', desc: '비틀즈의 희귀 LP판.' },
-    { name: '계산기', id: 'calc', desc: '공학용 계산기.' },
-    { name: '거울', id: 'mirror', desc: '화려한 손거울.' },
-    { name: '로그', id: 'log', desc: '서버 접속 기록 (결정적 증거).' }
-];
+// [아카이브 데이터] - /search 명령어로 검색 가능
+const archives = {
+    '피해자': "신원: 존 도(John Doe), 35세. 직업 불명. 최근 도박 빚이 있었다는 소문이 있음.",
+    '78번지': "사건 발생 장소. 낡은 아파트로 방음이 잘 되지 않음.",
+    '훈장': "1950년 한국 전쟁 참전 용사에게 수여된 명예로운 훈장.",
+    '비틀즈': "영국의 록 밴드. 1960년대 전설적인 인기를 끌었다. Daisy가 좋아한다.",
+    '로그': "시스템 접속 기록 파일. Victor가 관리 권한을 가지고 있는 것으로 보임."
+};
 
 // --- 2. DOM Elements & Utilities ---
 const outputDiv = document.getElementById('game-output');
@@ -126,54 +178,51 @@ const affinitySpan = document.getElementById('affinity-score');
 const invSpan = document.getElementById('inventory-list');
 const clockSpan = document.getElementById('clock');
 
+// 시계 가동
 setInterval(() => {
     const now = new Date();
     clockSpan.innerText = now.toLocaleTimeString('en-US', { hour12: false });
 }, 1000);
 
-// 화면 클리어
-function clearScreen() {
-    outputDiv.innerHTML = '';
-}
+function clearScreen() { outputDiv.innerHTML = ''; }
 
-// 타이핑 효과 (HTML 태그 지원 + 스타일 적용)
+// 텍스트 출력 엔진
 async function typeWriter(text, type = 'system', charName = null) {
     const div = document.createElement('div');
     
-    // 스타일 클래스 적용
     if (type === 'user-msg') {
         div.className = 'chat-bubble chat-right';
-        div.innerHTML = text; // 유저는 이름표 없음
+        div.innerHTML = text;
     } else if (type === 'char-msg') {
         div.className = 'chat-bubble chat-left';
-        // 이름표 추가
         const nameTag = `<span class="name-tag" style="color:${characters[charName].color}">${charName}</span>`;
         div.innerHTML = nameTag + text;
     } else if (type === 'sys-msg') {
         div.className = 'sys-msg';
         div.innerHTML = text;
+    } else if (type === 'hint') {
+        div.className = 'hint-box';
+        div.innerHTML = `[HINT] ${text}`;
     } else if (type === 'error-msg') {
         div.className = 'error-msg';
-        div.innerHTML = text;
+        div.innerHTML = `[ERROR] ${text}`;
     } else {
-        // 일반 텍스트 (BIOS 등)
-        div.innerHTML = text;
+        div.innerHTML = text; // 일반 텍스트
     }
 
     outputDiv.appendChild(div);
     outputDiv.scrollTop = outputDiv.scrollHeight;
     
-    // 텍스트 출력 딜레이 시뮬레이션 (단순화)
-    await new Promise(r => setTimeout(r, 50)); 
+    // 비동기 딜레이 (읽는 속도 고려)
+    await new Promise(r => setTimeout(r, 20)); 
 }
 
 // --- 3. Input Handling ---
-inputField.addEventListener('keypress', function (e) {
+inputField.addEventListener('keydown', function (e) { // keypress 대신 keydown (한글 호환성)
     if (e.key === 'Enter') {
         const val = this.value.trim();
         if (val) {
-            // 비밀번호 입력이나 시스템 입력은 말풍선 안 띄움
-            if (state.screen !== 'LOGIN') {
+            if (state.screen !== 'LOGIN') { // 로그인 아닐때만 말풍선 표시
                 typeWriter(val, 'user-msg');
             }
             processInput(val);
@@ -181,167 +230,133 @@ inputField.addEventListener('keypress', function (e) {
         this.value = '';
     }
 });
+document.addEventListener('click', () => inputField.focus());
 
-document.addEventListener('click', () => { inputField.focus(); });
-
-// 메인 입력 라우터
+// --- 4. Main Logic Router ---
 async function processInput(input) {
-    // 0. 이스터 에그 (글로벌)
-    if (['WHO ARE YOU', 'system32'].includes(input)) { triggerGlitchEffect('scary'); return; }
-    if (['MATRIX', 'neo'].includes(input)) { triggerGlitchEffect('matrix'); return; }
+    // 공통 명령어
+    if (input === '/help') {
+        showGlobalHelp();
+        return;
+    }
+    if (input.startsWith('/memo ')) {
+        const memoText = input.replace('/memo ', '');
+        state.memo.push(memoText);
+        typeWriter(`[메모 저장됨] ${memoText}`, 'sys-msg');
+        return;
+    }
+    if (input === '/memo') {
+        typeWriter(`=== 📝 탐정 수첩 ===<br>${state.memo.length ? state.memo.join('<br>') : '(비어있음)'}`, 'sys-msg');
+        return;
+    }
+    if (input.startsWith('/search ')) {
+        handleSearch(input.replace('/search ', ''));
+        return;
+    }
 
-    // 1. 화면 상태에 따른 처리
+    // 화면별 분기
     switch (state.screen) {
-        case 'LOGIN':
-            handleLogin(input);
-            break;
-        case 'DESKTOP':
-            handleDesktop(input);
-            break;
-        case 'PUBLIC_CHAT':
-            handlePublicChat(input);
-            break;
-        case 'PRIVATE_CHAT':
-            handlePrivateChat(input);
-            break;
-        default:
-            break;
+        case 'LOGIN': handleLogin(input); break;
+        case 'DESKTOP': handleDesktop(input); break;
+        case 'PUBLIC_CHAT': handlePublicChat(input); break;
+        case 'PRIVATE_CHAT': handlePrivateChat(input); break;
     }
 }
 
-// --- 4. Logic per Screen ---
+// --- 5. Screen Handlers ---
 
-// [화면 1] 로그인 처리
+// [LOGIN]
 async function handleLogin(input) {
     if (input === '1234') {
-        await typeWriter("[SUCCESS] 암호 확인됨. 메인프레임 접속 중...", 'sys-msg');
-        await new Promise(r => setTimeout(r, 1000));
+        await typeWriter("[SUCCESS] 인증 성공. ARPANET 노드 #78에 접속합니다.", 'sys-msg');
+        await new Promise(r => setTimeout(r, 800));
         transitionToDesktop();
     } else {
-        await typeWriter("[ACCESS DENIED] 암호가 일치하지 않습니다.", 'error-msg');
+        await typeWriter("비밀번호가 일치하지 않습니다.", 'error-msg');
     }
 }
 
-// [화면 2] 데스크탑 (로비)
+// [DESKTOP]
 function transitionToDesktop() {
     state.screen = 'DESKTOP';
     clearScreen();
     typeWriter("==========================================");
-    typeWriter("      GOS (Ghost OS) v1.0 - 1978");
+    typeWriter("    GHOST OS v3.0 - INTELLIGENT TERMINAL");
     typeWriter("==========================================");
-    typeWriter("환영합니다, 탐정님.");
-    typeWriter("최근 발생한 '살인사건'의 용의자들이 현재");
-    typeWriter("비공개 채팅 서버 #78에 모여있습니다.");
-    typeWriter("그들의 대화에 참여하여 증거를 수집하십시오.");
+    typeWriter("환영합니다. 현재 '78번지 살인사건' 수사가 진행 중입니다.");
+    typeWriter("용의자들과 대화하여 모순을 찾아내고 범인을 지목하십시오.");
     typeWriter("");
-    typeWriter("Available Commands:", 'sys-msg');
-    typeWriter("- /join  : 채팅 서버 접속");
-    typeWriter("- /help  : 도움말");
-    typeWriter("- /readme: 사건 개요 및 매뉴얼 읽기");
+    typeWriter("COMMANDS:", 'sys-msg');
+    typeWriter("- /join  : 용의자들이 있는 채팅방 접속");
+    typeWriter("- /search [키워드] : 경찰 데이터베이스 검색 (예: /search 피해자)");
+    typeWriter("- /memo [내용] : 수첩에 메모");
 }
 
 async function handleDesktop(input) {
     if (input === '/join') {
         enterPublicChat();
-    } else if (input === '/readme') {
-        typeWriter("--- 사건 파일 #001 ---", 'sys-msg');
-        typeWriter("피해자: 신원 미상의 남성");
-        typeWriter("발견 장소: 78번지 아파트");
-        typeWriter("목표: 채팅방의 인물들과 대화하여 진범을 찾아내라.");
-        typeWriter("팁: 상대방의 말에서 '키워드'를 찾아 다시 질문하라.");
-    } else if (input === '/help') {
-        typeWriter("명령어: /join, /readme");
     } else {
-        typeWriter("알 수 없는 명령어입니다. /help를 입력하세요.", 'error-msg');
+        typeWriter("알 수 없는 명령어입니다. '/join'을 입력하여 수사를 시작하세요.", 'error-msg');
     }
 }
 
-// [화면 3] 공개 채팅방 (인트로 연출)
+// [PUBLIC CHAT]
 async function enterPublicChat() {
     state.screen = 'PUBLIC_CHAT';
+    state.connectedChar = null;
     clearScreen();
     updateUI();
     
-    await typeWriter(">>> 보안 채널 #Lobby_78 접속 중...", 'sys-msg');
-    await new Promise(r => setTimeout(r, 1000));
-    
+    await typeWriter(">>> 공개 채널 #LOBBY 접속 완료", 'sys-msg');
     if (!state.introWatched) {
-        // 입장 이벤트 연출
-        await typeWriter("새로운 사용자가 입장했습니다.", 'sys-msg');
-        await new Promise(r => setTimeout(r, 800));
-        
-        await typeWriter(characters['Arthur'].intro, 'char-msg', 'Arthur');
-        await new Promise(r => setTimeout(r, 1000));
-        
-        await typeWriter(characters['Daisy'].intro, 'char-msg', 'Daisy');
-        await new Promise(r => setTimeout(r, 1000));
-        
-        await typeWriter(characters['Elena'].intro, 'char-msg', 'Elena');
-        await new Promise(r => setTimeout(r, 1000));
-        
-        await typeWriter(characters['Victor'].intro, 'char-msg', 'Victor');
-        await new Promise(r => setTimeout(r, 1000));
-        
+        await typeWriter("Arthur, Daisy, Victor, Elena가 접속해 있습니다.", 'sys-msg');
         state.introWatched = true;
-    } else {
-        await typeWriter("채팅방에 다시 입장했습니다.", 'sys-msg');
     }
-
-    typeWriter("------------------------------------------------");
-    typeWriter("[SYSTEM] 📩 새로운 개인 메시지(DM)가 도착했습니다.", 'sys-msg');
-    typeWriter("확인하려면 '/dm [이름]'을 입력하세요.", 'sys-msg');
-    typeWriter("(예: /dm Arthur, /dm Ghost)");
-    typeWriter("------------------------------------------------");
+    
+    typeWriter("누구에게 말을 걸까요? (명령어: /dm [이름])", 'sys-msg');
+    typeWriter("예: /dm Arthur, /dm Daisy");
 }
 
 async function handlePublicChat(input) {
     if (input.startsWith('/dm ')) {
-        const targetName = input.split(' ')[1];
-        if (characters[targetName] || targetName === 'Ghost') {
-            startPrivateChat(targetName);
+        const target = input.split(' ')[1];
+        // 첫 글자 대문자 변환 처리
+        const formattedTarget = target.charAt(0).toUpperCase() + target.slice(1).toLowerCase();
+        
+        if (characters[formattedTarget]) {
+            startPrivateChat(formattedTarget);
         } else {
-            typeWriter("존재하지 않는 사용자입니다.", 'error-msg');
+            typeWriter("그런 사람은 이 방에 없습니다. (철자를 확인하세요)", 'error-msg');
         }
-    } else if (input === '/help') {
-        typeWriter("공개 채팅방입니다. 용의자를 심문하려면 개인 메시지를 보내세요.");
-        typeWriter("명령어: /dm [이름], /inven, /accuse [이름]");
     } else if (input.startsWith('/accuse ')) {
         handleAccusation(input.split(' ')[1]);
-    } else if (input === '/inven') {
-        showInventory();
     } else {
-        typeWriter("이곳은 공개 채널입니다. 조사를 위해 1:1 대화(/dm)를 시도하세요.", 'sys-msg');
+        typeWriter("공개 채널에서는 대화가 불가능합니다. '/dm [이름]'으로 귓속말을 하세요.", 'sys-msg');
     }
 }
 
-// [화면 4] 1:1 개인 채팅 (심문 파트)
+// [PRIVATE CHAT] - 핵심 로직
 async function startPrivateChat(charName) {
     state.screen = 'PRIVATE_CHAT';
     state.connectedChar = charName;
+    state.failCount = 0; // 힌트 카운트 초기화
     
-    // 화면 전환 느낌
     clearScreen();
     updateUI();
     
-    await typeWriter(`>>> ${charName}님과의 1:1 보안 세션이 연결되었습니다.`, 'sys-msg');
-    typeWriter("대화를 종료하고 로비로 가려면 '/back' 입력.", 'sys-msg');
+    const char = characters[charName];
+    await typeWriter(`>>> ${charName}님과 암호화된 채널 연결됨`, 'sys-msg');
     
-    if (charName === 'Ghost') {
-        await typeWriter("...데이터베이스 연결됨. 수집한 키워드를 입력하면 분석해 주지.", 'char-msg', 'Ghost');
-    } else {
-        const char = characters[charName];
-        await typeWriter(`무슨 일이지? ${char.style}`, 'char-msg', charName);
-    }
+    // [UI 개선] 대화 가능한 주제 보여주기
+    let topicList = char.topics.map(t => `[${t}]`).join(' ');
+    typeWriter(`💡 대화 주제: ${topicList}`, 'hint');
+    
+    await typeWriter(`무슨 일이죠? ${char.style}`, 'char-msg', charName);
 }
 
 async function handlePrivateChat(input) {
-    // 1. 공통 명령어
     if (input === '/back') {
         enterPublicChat();
-        return;
-    }
-    if (input === '/inven') {
-        showInventory();
         return;
     }
     if (input.startsWith('/give ')) {
@@ -349,219 +364,111 @@ async function handlePrivateChat(input) {
         return;
     }
     
-    // 2. 미니게임
-    if (state.miniGameActive) {
-        processMiniGame(input);
-        return;
-    }
-
-    // 3. 대화 로직
-    const charName = state.connectedChar;
-    if (charName === 'Ghost') {
-        handleGhostLogic(input);
-    } else {
-        handleCharacterDialogue(charName, input);
-    }
-}
-
-// --- 5. Core Game Logic (Dialogue, Gift, Game) ---
-
-async function handleCharacterDialogue(charName, input) {
-    const char = characters[charName];
-    let response = "";
+    const char = characters[state.connectedChar];
+    const userText = input.toLowerCase(); // 소문자로 통일하여 비교
     
-    if (charName === 'Victor' && (input.includes('게임') || input.includes('내기'))) {
-        startMiniGame();
-        return;
-    }
-
-    let matched = false;
-    for (const key in char.keywords) {
-        if (input.includes(key)) {
-            response = char.keywords[key];
-            matched = true;
-            if (key === '피해자' || key === '사건') {
-                if (!state.cluesFound.includes(`${charName}:${key}`)) {
-                    state.cluesFound.push(`${charName}:${key}`);
-                    typeWriter(`[단서 획득] ${key}에 대한 진술 확보.`, 'sys-msg');
-                }
-            }
+    // 1. 대화 매칭 알고리즘
+    let bestMatch = null;
+    
+    for (const logic of char.dialogue) {
+        // keys 배열의 단어 중 하나라도 포함되어 있는지 확인
+        const isMatch = logic.keys.some(key => userText.includes(key));
+        if (isMatch) {
+            bestMatch = logic;
             break;
         }
     }
-
-    if (!matched) {
-        const reactions = [
-            `무슨 소리야? ${char.style}`,
-            `관심 없어. ${char.style}`,
-            `... (무시) ${char.style}`
-        ];
-        response = reactions[Math.floor(Math.random() * reactions.length)];
-    }
-
-    await typeWriter(response, 'char-msg', charName);
-}
-
-function handleGift(itemName) {
-    if (!state.inventory.includes(itemName)) {
-        typeWriter("그런 물건은 없습니다.", 'error-msg');
-        return;
-    }
-    const char = characters[state.connectedChar];
-    if (char.gift === itemName) {
-        state.affinity[state.connectedChar] += 30;
-        updateUI();
-        typeWriter(`이거... 나한테 주는 거야? 고마워! ${char.style}`, 'char-msg', state.connectedChar);
-        if(state.connectedChar === 'Victor' && state.affinity['Victor'] >= 40) {
-             typeWriter("[SYSTEM] Victor가 '서버_로그.txt'를 전송했습니다.", 'sys-msg');
-             state.inventory.push('로그');
-             updateUI();
+    
+    // 2. 응답 처리
+    if (bestMatch) {
+        state.failCount = 0; // 성공하면 실패 카운트 초기화
+        await typeWriter(bestMatch.text, 'char-msg', state.connectedChar);
+        
+        // 단서 발견 처리
+        if (bestMatch.clue && !state.cluesFound.includes(bestMatch.clue)) {
+            state.cluesFound.push(bestMatch.clue);
+            await new Promise(r => setTimeout(r, 500));
+            typeWriter(`🔍 [단서 획득] 수첩에 기록됨: ${bestMatch.clue}`, 'hint');
         }
     } else {
-        state.affinity[state.connectedChar] -= 10;
-        updateUI();
-        typeWriter(`이게 뭐야? 필요 없어. ${char.style}`, 'char-msg', state.connectedChar);
+        // 매칭 실패 시
+        state.failCount++;
+        const randomDefault = char.default[Math.floor(Math.random() * char.default.length)];
+        await typeWriter(randomDefault, 'char-msg', state.connectedChar);
+        
+        // 3. 힌트 시스템 (3번 이상 못 알아들으면)
+        if (state.failCount >= 2) {
+            const randomTopic = char.topics[Math.floor(Math.random() * char.topics.length)];
+            await new Promise(r => setTimeout(r, 500));
+            typeWriter(`(시스템 힌트: '${randomTopic}'에 대해 물어보세요.)`, 'sys-msg');
+            state.failCount = 0;
+        }
     }
 }
 
-function handleGhostLogic(input) {
-    if (input.includes('향수') && input.includes('피해자')) {
-        typeWriter("분석: 향수는 Daisy가 언급했고, Victor는 냄새에 민감함. Victor를 의심해.", 'char-msg', 'Ghost');
-    } else if (input.includes('로그')) {
-        typeWriter("로그 파일이 있다면 범인의 접속 기록을 확인할 수 있어.", 'char-msg', 'Ghost');
-    } else {
-        typeWriter("데이터 부족. 더 많은 키워드를 던져줘.", 'char-msg', 'Ghost');
-    }
-}
+// --- 6. Features (Search, Gift, Ending) ---
 
-// 미니게임 (숫자야구)
-function startMiniGame() {
-    state.miniGameActive = true;
-    state.miniGameTarget = generateTargetNumber();
-    typeWriter("=== [보안 프로토콜: CODE BREAKER] 시작 ===", 'sys-msg');
-    typeWriter("내 암호를 맞춰봐! 3자리 숫자야. (중복 없음)", 'char-msg', 'Victor');
-}
-
-function generateTargetNumber() {
-    let nums = [0,1,2,3,4,5,6,7,8,9];
-    let result = "";
-    for(let i=0; i<3; i++){
-        let idx = Math.floor(Math.random() * nums.length);
-        result += nums[idx];
-        nums.splice(idx, 1);
-    }
-    return result;
-}
-
-function processMiniGame(input) {
-    if (input === 'exit') {
-        state.miniGameActive = false;
-        typeWriter("미니게임을 종료합니다.", 'sys-msg');
-        return;
-    }
-    if (!/^\d{3}$/.test(input)) {
-        typeWriter("3자리 숫자를 입력하세요.", 'error-msg');
-        return;
-    }
-
-    let strike = 0; ball = 0;
-    const target = state.miniGameTarget;
-    for (let i = 0; i < 3; i++) {
-        if (input[i] === target[i]) strike++;
-        else if (target.includes(input[i])) ball++;
-    }
-
-    if (strike === 3) {
-        state.miniGameActive = false;
-        state.affinity['Victor'] += 20;
-        updateUI();
-        typeWriter(`말도 안 돼... 내 코드를 뚫다니! ( ; O ; )`, 'char-msg', 'Victor');
-        typeWriter("Victor의 신뢰도가 대폭 상승했습니다.", 'sys-msg');
-    } else {
-        typeWriter(`RESULT: ${strike}S ${ball}B`, 'sys-msg');
-    }
-}
-
-// 엔딩 처리
-async function handleAccusation(suspectName) {
-    if (!characters[suspectName]) { typeWriter("존재하지 않는 용의자입니다.", 'error-msg'); return; }
-    state.gameEnded = true;
+function handleSearch(keyword) {
+    typeWriter(`🔍 아카이브 검색 중: '${keyword}'...`, 'sys-msg');
     
-    await typeWriter("\n>>> 체포 영장 발부 중...", "sys-msg");
-    await new Promise(r => setTimeout(r, 1000));
-
-    if (suspectName === 'Victor' && state.inventory.includes('로그')) {
-        await typeWriter(`\n[SUCCESS] 범인 검거 성공!`, "sys-msg");
-        await typeWriter(`젠장... 로그를 지웠어야 했는데! ( ; _ ; )`, "char-msg", 'Victor');
-        await typeWriter(`탐정님, 완벽한 추리였습니다. ARPANET은 다시 평화를 되찾았습니다.`);
-    } else if (suspectName === 'Daisy') {
-        await typeWriter(`\n[FAILED] 오판입니다.`, "error-msg");
-        await typeWriter(`뭐? 내가? 웃기지 마 man! 변호사 부를 거야! {~~!_!~~}`, "char-msg", 'Daisy');
-        await typeWriter(`진범은 시스템 뒤에서 당신을 비웃고 있습니다... GAME OVER`);
+    // 정확한 매칭 or 포함된 키워드 찾기
+    const resultKey = Object.keys(archives).find(k => keyword.includes(k));
+    
+    if (resultKey) {
+        typeWriter(`[RESULT] ${archives[resultKey]}`);
     } else {
-        await typeWriter(`\n[FAILED] 증거 불충분.`, "error-msg");
-        await typeWriter(`${suspectName}는 알리바이가 확실했습니다. 당신은 해고되었습니다. GAME OVER`);
+        typeWriter("[NULL] 해당 키워드에 대한 데이터가 없습니다.", 'error-msg');
     }
 }
 
-// --- 6. Helper & Effects ---
+function handleGift(item) {
+    // 인벤토리 구현은 다음 단계에 (현재는 텍스트만 처리)
+    typeWriter("현재 버전에서는 아이템을 건네줄 수 없습니다. (업데이트 예정)", 'sys-msg');
+}
 
-function showInventory() {
-    if (state.inventory.length === 0) {
-        // [디버그/편의성] 테스트를 위해 초기 인벤토리 자동 지급
-        state.inventory = items.map(i => i.name);
-        typeWriter("탐정 가방에서 물건들을 꺼냈습니다.", 'sys-msg');
-        updateUI();
+async function handleAccusation(name) {
+    // 범인 지목 로직 (Victor가 범인)
+    if (name === 'Victor') {
+        clearScreen();
+        await typeWriter("체포 영장 발부 중... [██████████] 100%", 'sys-msg');
+        await typeWriter("Victor: 말도 안 돼... 내 알리바이 코드가 틀렸을 리 없어...!", 'char-msg', 'Victor');
+        await typeWriter("축하합니다! 진범을 검거했습니다.", 'sys-msg');
+        await typeWriter("THE ROOM: 1978 - CASE CLOSED");
     } else {
-        typeWriter(`가방: ${state.inventory.join(', ')}`, 'sys-msg');
+        typeWriter("증거 불충분. 그 사람은 범인이 아닙니다. 다시 조사하세요.", 'error-msg');
     }
+}
+
+function showGlobalHelp() {
+    typeWriter("--- 명령어 리스트 ---", 'sys-msg');
+    typeWriter("/dm [이름] : 해당 캐릭터와 대화");
+    typeWriter("/back : 로비로 나가기");
+    typeWriter("/search [단어] : 정보 검색");
+    typeWriter("/memo [내용] : 메모하기");
+    typeWriter("/accuse [이름] : 범인 지목 (신중하세요)");
 }
 
 function updateUI() {
     targetSpan.innerText = state.screen === 'PRIVATE_CHAT' ? state.connectedChar : 'LOBBY';
-    if(state.connectedChar && state.connectedChar !== 'Ghost') {
-        affinitySpan.innerText = state.affinity[state.connectedChar];
-    } else {
-        affinitySpan.innerText = '-';
-    }
-    invSpan.innerText = state.inventory.length > 0 ? state.inventory.join(', ') : 'EMPTY';
+    affinitySpan.innerText = state.connectedChar ? state.affinity[state.connectedChar] : '-';
+    invSpan.innerText = state.inventory.length || 'EMPTY';
 }
 
-async function triggerGlitchEffect(type) {
-    const body = document.body;
-    if (type === 'scary') {
-        body.classList.add('glitch-mode');
-        await typeWriter("SYSTEM ERROR... I SEE YOU...", "error-msg");
-        setTimeout(() => { body.classList.remove('glitch-mode'); }, 3000);
-    } else if (type === 'matrix') {
-        body.classList.add('invert-mode');
-        typeWriter("The Matrix has you...", 'sys-msg');
-        setTimeout(() => { body.classList.remove('invert-mode'); }, 3000);
-    }
-}
-
-function resetEffects() {
-    document.body.classList.remove('glitch-mode');
-    document.body.classList.remove('invert-mode');
-}
-
-// --- 7. Intro Sequence (Boot) ---
+// --- 7. Boot Sequence ---
 window.onload = async () => {
     state.screen = 'BOOT';
     inputField.focus();
     
-    // 부팅 시퀀스 연출
-    await typeWriter("BIOS CHECKING...", 'sys-msg');
+    // 초기 인벤토리 (테스트용)
+    state.inventory = ['경찰 배지'];
+    
+    await typeWriter("GHOST OS v3.0 BOOTING...", 'sys-msg');
     await new Promise(r => setTimeout(r, 500));
-    await typeWriter("RAM: 64KB OK.", 'sys-msg');
-    await typeWriter("LOADING OS...", 'sys-msg');
-    await new Promise(r => setTimeout(r, 800));
     
     clearScreen();
-    await typeWriter("🔒 SYSTEM LOCKED", 'error-msg');
-    await typeWriter("접속하려면 비밀번호(4자리)를 입력하세요.", 'sys-msg');
+    await typeWriter(" ACCESS RESTRICTED", 'error-msg');
+    await typeWriter("보안 암호(1234)를 입력하세요.", 'sys-msg');
     state.screen = 'LOGIN';
 };
-
 // 초기 로드 시 바로 포커스 (New)
 inputField.focus();
