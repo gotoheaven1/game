@@ -119,6 +119,39 @@ async function typeWriter(text, className = '') {
     outputDiv.scrollTop = outputDiv.scrollHeight;
 }
 
+// 이스터 에그 실행 함수 (New)
+async function triggerGlitchEffect(type) {
+    const body = document.body;
+    
+    if (type === 'scary') {
+        // 공포 분위기: 빨간색 + 흔들림
+        body.classList.add('glitch-mode');
+        await typeWriter("SYSTEM ERROR... SYSTEM ERROR...", "error-msg");
+        await typeWriter("I SEE YOU. I SEE YOU. I SEE YOU.", "error-msg");
+        
+        // 3초 뒤 자동 해제 (너무 어지러우니까)
+        setTimeout(() => {
+            body.classList.remove('glitch-mode');
+            printSystem("보안 시스템 재부팅 완료.");
+        }, 3000);
+
+    } else if (type === 'matrix') {
+        // 색상 반전 효과
+        body.classList.add('invert-mode');
+        printSystem("The Matrix has you...");
+        
+        // 3초 뒤 자동 해제
+        setTimeout(() => {
+            body.classList.remove('invert-mode');
+        }, 3000);
+    }
+}
+
+function resetEffects() {
+    document.body.classList.remove('glitch-mode');
+    document.body.classList.remove('invert-mode');
+}
+
 // --- 3. Input Handling ---
 inputField.addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
@@ -138,6 +171,21 @@ async function processInput(input) {
     // 1. 미니게임 중일 때
     if (state.miniGameActive) {
         processMiniGame(input);
+        return;
+    }
+
+    // [이스터 에그 트리거] (New)
+    if (input === 'WHO ARE YOU' || input === 'system32') {
+        triggerGlitchEffect('scary');
+        return;
+    }
+    if (input === 'MATRIX' || input === 'neo') {
+        triggerGlitchEffect('matrix');
+        return;
+    }
+    if (input === 'RESET') {
+        resetEffects();
+        printSystem("시스템 화면 복구 완료.");
         return;
     }
 
@@ -398,3 +446,11 @@ window.onload = async () => {
     await typeWriter("의뢰: 채팅방의 비밀을 밝혀라. 명령어 목록은 /help");
     await typeWriter("시작하려면 /join 명령어를 입력하세요.");
 };
+
+// [UX 개선] 화면 어디를 클릭해도 입력창으로 포커스 이동 (New)
+document.addEventListener('click', () => {
+    inputField.focus();
+});
+
+// 초기 로드 시 바로 포커스 (New)
+inputField.focus();
