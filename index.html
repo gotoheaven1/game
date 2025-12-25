@@ -2,21 +2,38 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>TERMINAL: 2105</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE ROOM: 1978</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="crt-overlay"></div>
-    <div id="terminal">
-        <div id="output">
-            <div class="line system">SYSTEM: OS 2105 v1.0.4 initialized...</div>
-            <div class="line">Type 'help' to see available commands.</div>
+    <div class="screen-container">
+        <header>
+            <span class="system-status">System: ARPANET_NODE_78</span>
+            <span class="system-time" id="clock">00:00:00</span>
+        </header>
+        
+        <div id="game-output" class="output-area">
+            </div>
+
+        <div class="input-area">
+            <span class="prompt">User@ARPANET:~$</span>
+            <input type="text" id="user-input" autocomplete="off" autofocus>
+            <span class="cursor">_</span>
         </div>
-        <div class="input-line">
-            <span class="prompt">guest@terminal:~$</span>
-            <input type="text" id="command-input" autofocus autocomplete="off">
-        </div>
+
+        <footer>
+            <div id="status-bar">
+                TARGET: <span id="current-target">NONE</span> | 
+                AFFINITY: <span id="affinity-score">0</span>% | 
+                INV: <span id="inventory-list">EMPTY</span>
+            </div>
+        </footer>
     </div>
-    <script src="script.js"></script>
+    
+    <audio id="type-sound" src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU..."></audio>
+
+    <script src="game.js"></script>
 </body>
 </html>
