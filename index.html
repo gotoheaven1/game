@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Sims Life</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <h1>심즈 텍스트 라이프 💎</h1>
+        
+        <div id="status-panel">
+            <div class="stat">허기: <span id="hunger">100</span>%</div>
+            <div class="stat">에너지: <span id="energy">100</span>%</div>
+            <div class="stat">재미: <span id="fun">100</span>%</div>
+            <div class="stat">자금: <span id="money">1000</span>§</div>
+        </div>
+
+        <div id="log-container">
+            <ul id="game-log">
+                <li>게임을 시작합니다! 오늘 하루는 어떨까요?</li>
+            </ul>
+        </div>
+
+        <div id="action-panel">
+            <button onclick="performAction('eat')">🍕 식사하기</button>
+            <button onclick="performAction('sleep')">🛌 잠자기</button>
+            <button onclick="performAction('work')">💼 출근하기</button>
+            <button onclick="performAction('play')">🎮 게임하기</button>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
