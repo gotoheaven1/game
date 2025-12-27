@@ -2,119 +2,75 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Neon Sim World: Eternal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Beat: Tyla Edition</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="background-glow"></div>
-    
-    <div id="game-container" class="glass-panel">
-        <div class="system-bar">
-            <div id="news-ticker">
-                <span class="ticker-icon">📢</span>
-                <span id="news-text">시스템 가동. 저장 기능을 사용할 수 있습니다.</span>
+
+    <div class="ui-layer">
+        <div class="header">
+            <div class="info-group">
+                <h1>NEON BEAT</h1>
+                <select id="songSelect">
+                    <option value="song1.mp3.mp3">Tyla - CHANEL</option>
+                    <option value="song2.mp3.mp3">Tyla - PUSH 2 START</option>
+                </select>
             </div>
-            <div class="sys-controls">
-                <button onclick="saveGame()" class="btn-sys">💾 저장</button>
-                <button onclick="loadGame()" class="btn-sys">📂 로드</button>
-                <button onclick="resetGame()" class="btn-sys danger">⚠️ 초기화</button>
+            
+            <div class="theme-selector">
+                <select id="themeSelect">
+                    <option value="neon">Neon</option>
+                    <option value="sunset">Sunset</option>
+                    <option value="monochrome">Mono</option>
+                </select>
             </div>
         </div>
-
-        <header>
-            <div class="header-content">
-                <h1>🧬 SIM UNIVERSE <span class="version">v4.0 (Save/Load)</span></h1>
-                <div class="control-box">
-                    <label>👁 VIEW:</label>
-                    <select id="sim-selector" class="glass-input"></select>
-                </div>
-            </div>
-
-            <div id="sim-profile" class="glass-card">
-                <div class="profile-header">
-                    <div class="profile-info">
-                        <span id="sim-name">Loading...</span>
-                        <span id="sim-age" class="tag age-tag">0세</span>
-                        <span id="sim-job" class="tag job-tag">직업</span>
-                        <span id="sim-trait" class="tag trait-tag">성격</span>
-                    </div>
-                    <div class="profile-badges">
-                        <span id="sim-criminal" class="badge danger hidden">🚨 전과자</span>
-                    </div>
-                </div>
-                <div class="profile-meta">
-                    <div class="meta-item">📍 <span id="current-location">-</span></div>
-                    <div class="meta-item">🎒 <span id="inventory-list">비어있음</span></div>
-                </div>
-                
-                <div class="family-section">
-                    <span class="label">FAMILY TREE</span>
-                    <div id="family-list" class="scrolling-wrapper">독신</div>
-                </div>
-            </div>
-        </header>
-
-        <div id="main-view">
-            <div id="dashboard">
-                <div class="stats-grid glass-card">
-                    <div class="money-display">
-                        <span class="label">ASSETS</span>
-                        <span id="money-text">0 ₩</span>
-                    </div>
-                    
-                    <div class="stat-row"><span>🍖 허기</span> <div class="bar-bg"><div id="hunger-bar" class="fill-bar red"></div></div></div>
-                    <div class="stat-row"><span>⚡ 활력</span> <div class="bar-bg"><div id="energy-bar" class="fill-bar yellow"></div></div></div>
-                    <div class="stat-row"><span>💕 행복</span> <div class="bar-bg"><div id="love-bar" class="fill-bar pink"></div></div></div>
-                    <div class="stat-row"><span>⚖️ 도덕</span> <div class="bar-bg"><div id="moral-bar" class="fill-bar white"></div></div></div>
-                </div>
-                
-                <div id="ai-monitor" class="glass-card terminal">
-                    <div class="terminal-header">🧠 AI NEURAL LINK</div>
-                    <div class="terminal-body">
-                        <p id="thought-process" class="console-text">System initializing...</p>
-                        <hr class="dashed">
-                        <p id="action-text">Ready</p>
-                        <div class="loader-bg"><div class="loader" id="action-loader"></div></div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="social-panel" class="glass-card">
-                <h3>SOCIAL GRAPH</h3>
-                <ul id="relationship-list"></ul>
-            </div>
+        
+        <div class="score-board">
+            <div class="score"><span id="scoreVal">0</span></div>
+            <div class="combo"><span id="comboVal">0</span> COMBO</div>
         </div>
 
-        <div id="log-container" class="glass-card">
-            <h3>📝 EVENT LOG</h3>
-            <ul id="event-log"></ul>
+        <div id="startScreen" class="overlay">
+            <h2>TOUCH TO START</h2>
+            <p>Select a song above</p>
+            <p class="controls">Touch the bottom lanes!</p>
+            <button id="startBtn">PLAY</button>
+            <p id="loadingText" class="hidden">Loading Audio...</p>
+        </div>
+        
+        <div id="resultScreen" class="overlay hidden">
+            <h2>FINISHED!</h2>
+            <p>Score: <span id="finalScore">0</span></p>
+            <div class="btn-group">
+                <button onclick="location.reload()">Replay</button>
+            </div>
         </div>
     </div>
 
-    <button id="fab-create" onclick="toggleCreator()">+</button>
-
-    <div id="creator-modal" class="modal-overlay hidden">
-        <div class="modal-content glass-panel">
-            <h2>✨ NEW SIMULANT</h2>
-            <div class="input-group">
-                <label>이름</label>
-                <input type="text" id="new-sim-name" class="glass-input" placeholder="이름 입력">
+    <div class="game-container">
+        <div class="track-container">
+            <div class="lane" data-key="0">
+                <div class="hit-zone"></div>
             </div>
-            <div class="input-group">
-                <label>성격</label>
-                <select id="new-sim-trait" class="glass-input"></select>
+            <div class="lane" data-key="1">
+                <div class="hit-zone"></div>
             </div>
-            <div class="input-group">
-                <label>직업</label>
-                <select id="new-sim-job" class="glass-input"></select>
+            <div class="lane" data-key="2">
+                <div class="hit-zone"></div>
             </div>
-            <div class="modal-actions">
-                <button onclick="toggleCreator()" class="btn-cancel">취소</button>
-                <button onclick="createNewSim()" class="btn-create">창조하기</button>
+            <div class="lane" data-key="3">
+                <div class="hit-zone"></div>
             </div>
+            
+            <div id="noteContainer"></div>
         </div>
+        
+        <div id="judgment"></div>
     </div>
+
+    <audio id="bgm" preload="auto"></audio>
 
     <script src="script.js"></script>
 </body>
