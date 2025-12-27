@@ -2,74 +2,120 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Sim World: Family & Legacy</title>
+    <title>Neon Sim World: Eternal</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div id="game-container">
-        <div id="news-ticker">📰 <span id="news-text">새로운 가문이 탄생했습니다.</span></div>
+    <div class="background-glow"></div>
+    
+    <div id="game-container" class="glass-panel">
+        <div class="system-bar">
+            <div id="news-ticker">
+                <span class="ticker-icon">📢</span>
+                <span id="news-text">시스템 가동. 저장 기능을 사용할 수 있습니다.</span>
+            </div>
+            <div class="sys-controls">
+                <button onclick="saveGame()" class="btn-sys">💾 저장</button>
+                <button onclick="loadGame()" class="btn-sys">📂 로드</button>
+                <button onclick="resetGame()" class="btn-sys danger">⚠️ 초기화</button>
+            </div>
+        </div>
 
         <header>
-            <h1>🧬 Sim Family Universe</h1>
-            
-            <div id="control-panel">
-                <label>👁 관찰 대상:</label>
-                <select id="sim-selector"></select>
+            <div class="header-content">
+                <h1>🧬 SIM UNIVERSE <span class="version">v4.0 (Save/Load)</span></h1>
+                <div class="control-box">
+                    <label>👁 VIEW:</label>
+                    <select id="sim-selector" class="glass-input"></select>
+                </div>
             </div>
 
-            <div id="sim-profile">
-                <div class="profile-main">
-                    <span id="sim-name" class="highlight">이름</span>
-                    <span id="sim-age" class="badge">0세</span>
-                    <span id="sim-trait" class="badge">성격</span>
-                    <span id="sim-job" class="badge">직업</span>
-                    <span id="sim-criminal" class="badge hidden">🚨 전과자</span>
+            <div id="sim-profile" class="glass-card">
+                <div class="profile-header">
+                    <div class="profile-info">
+                        <span id="sim-name">Loading...</span>
+                        <span id="sim-age" class="tag age-tag">0세</span>
+                        <span id="sim-job" class="tag job-tag">직업</span>
+                        <span id="sim-trait" class="tag trait-tag">성격</span>
+                    </div>
+                    <div class="profile-badges">
+                        <span id="sim-criminal" class="badge danger hidden">🚨 전과자</span>
+                    </div>
                 </div>
-                <div class="profile-sub">
-                    📍 <span id="current-location" class="loc-text">-</span> | 
-                    🎒 <span id="inventory-list" class="inv-text">없음</span>
+                <div class="profile-meta">
+                    <div class="meta-item">📍 <span id="current-location">-</span></div>
+                    <div class="meta-item">🎒 <span id="inventory-list">비어있음</span></div>
                 </div>
-                <div id="family-tree-box">
-                    <div class="family-label">👨‍👩‍👧‍👦 가족 관계</div>
-                    <div id="family-list">독신</div>
+                
+                <div class="family-section">
+                    <span class="label">FAMILY TREE</span>
+                    <div id="family-list" class="scrolling-wrapper">독신</div>
                 </div>
             </div>
         </header>
 
         <div id="main-view">
             <div id="dashboard">
-                <div class="stats-container">
-                    <div class="stat-box">
-                        <label>💰 가문 자산</label>
-                        <div class="value-text" id="money-text">0원</div>
+                <div class="stats-grid glass-card">
+                    <div class="money-display">
+                        <span class="label">ASSETS</span>
+                        <span id="money-text">0 ₩</span>
                     </div>
-                    <div class="stat">🍖 허기 <div class="bar"><div id="hunger-bar"></div></div></div>
-                    <div class="stat">⚡ 에너지 <div class="bar"><div id="energy-bar"></div></div></div>
-                    <div class="stat">🚿 위생 <div class="bar"><div id="hygiene-bar"></div></div></div>
-                    <div class="stat">💕 사랑 <div class="bar"><div id="love-bar"></div></div></div> <div class="stat">💬 사교 <div class="bar"><div id="social-bar"></div></div></div>
-                    <div class="stat">⚖️ 도덕성 <div class="bar"><div id="moral-bar"></div></div></div>
+                    
+                    <div class="stat-row"><span>🍖 허기</span> <div class="bar-bg"><div id="hunger-bar" class="fill-bar red"></div></div></div>
+                    <div class="stat-row"><span>⚡ 활력</span> <div class="bar-bg"><div id="energy-bar" class="fill-bar yellow"></div></div></div>
+                    <div class="stat-row"><span>💕 행복</span> <div class="bar-bg"><div id="love-bar" class="fill-bar pink"></div></div></div>
+                    <div class="stat-row"><span>⚖️ 도덕</span> <div class="bar-bg"><div id="moral-bar" class="fill-bar white"></div></div></div>
                 </div>
                 
-                <div id="ai-monitor">
-                    <h3>🧠 AI Action Log</h3>
-                    <p id="thought-process" class="console-text">-</p>
-                    <hr>
-                    <p id="action-text">대기 중...</p>
-                    <div class="loader-bg"><div class="loader" id="action-loader"></div></div>
+                <div id="ai-monitor" class="glass-card terminal">
+                    <div class="terminal-header">🧠 AI NEURAL LINK</div>
+                    <div class="terminal-body">
+                        <p id="thought-process" class="console-text">System initializing...</p>
+                        <hr class="dashed">
+                        <p id="action-text">Ready</p>
+                        <div class="loader-bg"><div class="loader" id="action-loader"></div></div>
+                    </div>
                 </div>
             </div>
 
-            <div id="social-panel">
-                <h3>💞 인간관계 (Social Graph)</h3>
+            <div id="social-panel" class="glass-card">
+                <h3>SOCIAL GRAPH</h3>
                 <ul id="relationship-list"></ul>
             </div>
         </div>
 
-        <div id="log-container">
-            <h3>📝 인생사 기록</h3>
+        <div id="log-container" class="glass-card">
+            <h3>📝 EVENT LOG</h3>
             <ul id="event-log"></ul>
         </div>
     </div>
+
+    <button id="fab-create" onclick="toggleCreator()">+</button>
+
+    <div id="creator-modal" class="modal-overlay hidden">
+        <div class="modal-content glass-panel">
+            <h2>✨ NEW SIMULANT</h2>
+            <div class="input-group">
+                <label>이름</label>
+                <input type="text" id="new-sim-name" class="glass-input" placeholder="이름 입력">
+            </div>
+            <div class="input-group">
+                <label>성격</label>
+                <select id="new-sim-trait" class="glass-input"></select>
+            </div>
+            <div class="input-group">
+                <label>직업</label>
+                <select id="new-sim-job" class="glass-input"></select>
+            </div>
+            <div class="modal-actions">
+                <button onclick="toggleCreator()" class="btn-cancel">취소</button>
+                <button onclick="createNewSim()" class="btn-create">창조하기</button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
