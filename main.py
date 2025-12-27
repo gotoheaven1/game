@@ -784,3 +784,277 @@ def main():
 
 if __name__ == "__main__":
     main()
+    import random
+import time
+
+# 사회적 등급 정의
+SOCIAL_TITLES = [
+    {"min_rep": 0, "title": "평민", "perk": "없음"},
+    {"min_rep": 100, "title": "지역 유명인", "perk": "업무 보너스 10%"},
+    {"min_rep": 500, "title": "인플루언서", "perk": "상점 할인 15%"},
+    {"min_rep": 1500, "title": "상류층 엘리트", "perk": "매일 연금 500원"}
+]
+
+class NPC:
+    def __init__(self, name):
+        self.name = name
+        self.rel_score = 0  # 관계 점수 (-100 ~ 100)
+        self.type = random.choice(["친절함", "까칠함", "유쾌함"])
+
+class Sim:
+    def __init__(self, name):
+        self.name = name
+        self.money = 1000
+        self.energy = 100
+        self.social = 50      # 사회적 욕구 (0~100)
+        self.reputation = 0   # 명성/평판
+        self.charisma = 10    # 매력 능력치
+        self.is_alive = True
+        
+        self.relationships = {} # {NPC_name: NPC_object}
+        self.day = 1
+
+    def get_social_title(self):
+        current_title = SOCIAL_TITLES[0]
+        for t in SOCIAL_TITLES:
+            if self.reputation >= t['min_rep']:
+                current_title = t
+        return current_title
+
+    def show_status(self):
+        title_info = self.get_social_title()
+        print(f"\n{'='*60}")
+        print(f" [Day {self.day}] {self.name} | 지위: {title_info['title']} ({self.reputation} pt)")
+        print(f" 🎭 매력: {self.charisma} | 🗣️ 사회적 욕구: {self.social}/100")
+        print(f" 🤝 관계 중인 인물: {len(self.relationships)}명")
+        print(f"{'-'*60}")
+        print(f" 💰 자산: {self.money}원 | ⚡ 에너지: {int(self.energy)}/100")
+        print(f"{'='*60}")
+
+    def meet_new_person(self):
+        names = ["철수", "영희", "지수", "민수", "바비", "제니"]
+        new_name = random.choice(names) + str(random.randint(1, 99))
+        if new_name not in self.relationships:
+            self.relationships[new_name] = NPC(new_name)
+            print(f"👋 새로운 이웃 '{new_name}'을(를) 만났습니다!")
+        else:
+            print("이미 알고 있는 사람을 거리에서 마주쳤습니다.")
+
+    def socialize(self):
+        if not self.relationships:
+            print("❌ 아는 사람이 없습니다. 먼저 이웃을 만나세요!")
+            return
+
+        print("\n--- 누구와 대화하시겠습니까? ---")
+        npc_list = list(self.relationships.values())
+        for i, npc in enumerate(npc_list):
+            status = "단짝" if npc.rel_score > 70 else "호감" if npc.rel_score > 20 else "서먹함"
+            print(f"{i+1}. {npc.name} (관계: {npc.rel_score}, 상태: {status})")
+        
+        choice = int(input("번호 선택: ")) - 1
+        target = npc_list[choice]
+
+        print(f"\n{target.name}와(과) 무엇을 할까요?")
+        print("1. 일상 대화  2. 농담하기  3. 자랑하기(명성 필요)")
+        action = input("선택: ")
+
+        if action == '1':
+            success = random.random() + (self.charisma / 100)
+            if success > 0.4:
+                target.rel_score += 10
+                self.social = min(100, self.social + 20)
+                self.charisma += 1
+                print(f"😊 대화가 잘 통했습니다! ({target.name} 관계 +10)")
+            else:
+                target.rel_score -= 5
+                print(f"😶 대화가 끊겨 어색해졌습니다... ({target.name} 관계 -5)")
+
+        elif action == '2':
+            if random.random() < 0.6:
+                target.rel_score += 20
+                self.reputation += 5
+                self.social = min(100, self.social + 30)
+                print(f"🤣 농담이 터졌습니다! 명성도 약간 올랐습니다.")
+            else:
+                target.rel_score -= 15
+                print(f"😨 분위기가 싸해졌습니다... 무리수였나 봅니다.")
+
+        elif action == '3':
+            if self.reputation > 50:
+                print(f"😎 자신의 업적을 뽐냅니다. 명성이 상승합니다!")
+                self.reputation += 30
+                self.charisma += 2
+            else:
+                print("❌ 아직 자랑할 만한 명성이 없습니다.")
+
+    def pass_time(self):
+        self.day += 1
+        self.social -= 10  # 시간이 흐르면 외로워짐
+        if self.social < 20:
+            print("😟 너무 외롭습니다... 기운이 빠집니다.")
+            self.energy -= 10
+        
+        # 지위에 따른 보너스
+        title = self.get_social_title()
+        if title['title'] == "상류층 엘리트":
+            self.money += 500
+            print("👑 엘리트 연금 500원이 입금되었습니다.")
+
+def main():
+    player = Sim(input("심의 이름: "))
+
+    while player.is_alive:
+        player.show_status()
+        print("1. 이웃 만나기  2. 사교활동  3. 일하기  4. 휴식  5. 종료")
+        cmd = input("행동: ")
+
+        if cmd == '1':
+            player.meet_new_person()
+            player.energy -= 10
+        elif cmd == '2':
+            player.socialize()
+            player.energy -= 15
+        elif cmd == '3':
+            bonus = 1.1 if player.get_social_title()['title'] == "지역 유명인" else 1.0
+            earned = int(400 * bonus)
+            player.money += earned
+            player.reputation += 10
+            print(f"💼 업무 완료! {earned}원을 벌고 명성이 쌓였습니다.")
+        elif cmd == '4':
+            player.energy = min(100, player.energy + 50)
+            player.pass_time()
+        elif cmd == '5':
+            break
+
+        if player.energy <= 0:
+            print("💀 과로사했습니다...")
+            player.is_alive = False
+import random
+import time
+
+class NPC:
+    def __init__(self, name):
+        self.name = name
+        self.rel_score = 0
+        self.status = "낯선 사람"
+        self.memory = [] # 과거에 당한(?) 일 기억
+
+    def update_status(self):
+        if self.rel_score >= 90: self.status = "연인"
+        elif self.rel_score >= 70: self.status = "단짝 친구"
+        elif self.rel_score >= 30: self.status = "친구"
+        elif self.rel_score <= -50: self.status = "철천지원수"
+        elif self.rel_score <= -10: self.status = "싫어하는 사이"
+        else: self.status = "낯선 사람"
+
+class Sim:
+    def __init__(self, name):
+        self.name = name
+        self.money = 1000
+        self.energy = 100
+        self.social = 50
+        self.reputation = 0
+        self.charisma = 10
+        self.inventory = ["싸구려 꽃다발"] # 선물 테스트용
+        self.relationships = {} # {name: NPC_object}
+        self.mood = "보통" # 신규: 감정 상태
+        self.is_alive = True
+
+    def show_status(self):
+        print(f"\n{'='*60}")
+        print(f" {self.name} | 기분: {self.mood} | 명성: {self.reputation}")
+        print(f" 🤝 사회적 관계 ({len(self.relationships)}명):")
+        for n, obj in self.relationships.items():
+            print(f"   - {n}: {obj.rel_score}점 ({obj.status})")
+        print(f"{'-'*60}")
+        print(f" 🍎사회적 욕구: {self.social}/100 | 💰자산: {self.money}원")
+        print(f"{'='*60}")
+
+    def interact(self, target_name):
+        npc = self.relationships[target_name]
+        print(f"\n[{target_name}]님과 무엇을 할까요? (상태: {npc.status})")
+        print("--- [긍정적] ---")
+        print("1. 진심 어린 칭찬  2. 선물 공세")
+        print("--- [부정적] ---")
+        print("3. 대놓고 모욕하기  4. 말싸움 걸기")
+        
+        act = input("행동 선택: ")
+
+        if act == '1': # 칭찬하기
+            success = random.random() + (self.charisma / 100)
+            if success > 0.3:
+                npc.rel_score += 15
+                self.reputation += 5
+                print(f"✨ \"오늘 정말 멋지시네요!\" {target_name}의 기분이 좋아 보입니다.")
+            else:
+                npc.rel_score -= 5
+                print(f"😅 칭찬이 너무 과했나 봅니다. 분위기가 썰렁합니다.")
+
+        elif act == '2': # 선물하기
+            if "싸구려 꽃다발" in self.inventory:
+                self.inventory.remove("싸구려 꽃다발")
+                npc.rel_score += 35
+                print(f"🎁 선물을 줬습니다! {target_name}이(가) 감동하며 당신을 껴안습니다.")
+            else:
+                print("❌ 인벤토리에 선물할 아이템이 없습니다.")
+
+        elif act == '3': # 모욕하기
+            npc.rel_score -= 30
+            self.reputation -= 20
+            self.mood = "화남" # 싸우고 나면 본인 기분도 나빠짐
+            print(f"💢 \"당신 진짜 별로야!\" {target_name}에게 상처를 줬습니다. 명성이 하락합니다.")
+
+        elif act == '4': # 말싸움
+            if npc.rel_score < 0:
+                print(f"👊 {target_name}와(과) 크게 한판 붙었습니다! 서로의 에너지가 크게 깎입니다.")
+                self.energy -= 30
+                npc.rel_score -= 50
+            else:
+                print(f"❓ {target_name}: \"갑자기 왜 그러세요?\" 싸움이 성립되지 않습니다.")
+
+        npc.update_status()
+
+    def pass_time(self):
+        self.social -= 5
+        if self.mood == "화남":
+            self.energy -= 10 # 스트레스로 인한 에너지 소모 증가
+            if random.random() < 0.3: self.mood = "보통" # 일정 확률로 화 풀림
+
+def main():
+    player = Sim(input("심의 이름: "))
+    # 기본 NPC 한 명 추가
+    player.relationships["이웃 철수"] = NPC("이웃 철수")
+
+    while player.is_alive:
+        player.show_status()
+        print("1. 이웃과 교류  2. 일하기  3. 휴식  4. 종료")
+        cmd = input("행동: ")
+
+        if cmd == '1':
+            target = "이웃 철수" # 테스트용 고정
+            player.interact(target)
+            player.social = min(100, player.social + 20)
+        elif cmd == '2':
+            if player.mood == "화남":
+                earned = 200 # 기분 나쁘면 성과 저하
+                print("😤 기분이 좋지 않아 일에 집중이 안 됩니다... (수익 감소)")
+            else:
+                earned = 400
+            player.money += earned
+            player.energy -= 20
+        elif cmd == '3':
+            player.energy = min(100, player.energy + 50)
+            player.pass_time()
+        elif cmd == '4':
+            break
+
+        if player.energy <= 0:
+            print("💀 심이 쓰러졌습니다.")
+            player.is_alive = False
+
+if __name__ == "__main__":
+    main()
+
+if __name__ == "__main__":
+    main()
+
