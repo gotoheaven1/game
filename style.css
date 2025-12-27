@@ -1,65 +1,83 @@
 body {
-    background-color: #f0f2f5;
-    font-family: 'Apple SD Gothic Neo', sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
+    background-color: #0d1117; color: #c9d1d9; font-family: 'Courier New', monospace;
+    display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0;
 }
 
 #game-container {
-    width: 400px;
-    background: white;
-    padding: 20px;
-    border-radius: 15px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    border-top: 8px solid #55efc4; /* 심즈 상징색 */
+    width: 850px; background: #161b22; border: 1px solid #30363d; padding: 20px; border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.8); position: relative; transition: border 0.3s;
 }
 
-h1 { text-align: center; color: #2d3436; font-size: 1.5rem; }
-
-#status-panel {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    background: #dfe6e9;
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 20px;
+/* 감옥 수감 시 시각 효과 */
+.jail-overlay {
+    border: 4px solid #ff4444 !important;
+    background: repeating-linear-gradient(
+        45deg,
+        #161b22,
+        #161b22 10px,
+        #2a0d0d 10px,
+        #2a0d0d 20px
+    ) !important;
 }
 
-.stat { font-weight: bold; color: #2d3436; }
+header { text-align: center; border-bottom: 1px solid #30363d; padding-bottom: 15px; margin-bottom: 15px; }
+h1 { margin: 0 0 10px 0; color: #58a6ff; font-size: 1.5em; }
 
-#log-container {
-    height: 150px;
-    overflow-y: auto;
-    border: 1px solid #dfe6e9;
-    padding: 10px;
-    margin-bottom: 20px;
-    font-size: 0.9rem;
-    background: #fafafa;
-}
+#control-panel { margin-bottom: 10px; font-weight: bold; }
+select { background: #21262d; color: #fff; border: 1px solid #30363d; padding: 5px; border-radius: 5px; cursor: pointer; }
 
-#game-log { list-style: none; padding: 0; margin: 0; }
-#game-log li { margin-bottom: 5px; border-bottom: 1px solid #eee; padding-bottom: 3px; }
+#sim-profile { background: #21262d; padding: 10px; border-radius: 8px; display: inline-block; width: 90%; }
+.profile-row { margin-bottom: 5px; display: flex; justify-content: center; align-items: center; gap: 8px; }
+.highlight { font-weight: bold; color: #f0f6fc; font-size: 1.1em; }
+.loc-text { color: #e3b341; font-weight: bold; }
 
-#action-panel {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-}
+.badge { padding: 3px 8px; border-radius: 4px; font-size: 0.8em; border: 1px solid #30363d; font-weight: bold; }
+#sim-criminal { background: #ff4444; color: white; display: none; }
+#sim-criminal.show { display: inline-block; animation: blink 2s infinite; }
+@keyframes blink { 50% { opacity: 0.6; } }
 
-button {
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    background: #55efc4;
-    color: #2d3436;
-    font-weight: bold;
-    cursor: pointer;
-    transition: transform 0.1s;
-}
+#main-view { display: flex; gap: 15px; height: 380px; }
+#dashboard { flex: 1.2; display: flex; flex-direction: column; }
+#social-panel { flex: 0.8; background: #010409; border: 1px solid #30363d; border-radius: 8px; padding: 10px; overflow-y: auto; }
 
-button:hover { background: #00b894; color: white; }
-button:active { transform: scale(0.95); }
+/* 스탯 바 */
+.stat { display: flex; justify-content: space-between; align-items: center; font-size: 0.85em; margin: 6px 0; }
+.bar { width: 60%; height: 8px; background: #21262d; border-radius: 4px; overflow: hidden; }
+.bar div { height: 100%; transition: width 0.5s ease; }
+
+#hunger-bar { background: #ff7b72; }
+#energy-bar { background: #d2a8ff; }
+#hygiene-bar { background: #79c0ff; }
+#fun-bar { background: #e3b341; }
+#social-bar { background: #3fb950; }
+#moral-bar { background: #f0f6fc; } /* 도덕성 (흰색) */
+
+.stat-box { background: #21262d; padding: 8px; border-radius: 5px; text-align: center; margin-bottom: 10px; }
+.value-text { font-size: 1.2em; color: #7ee787; font-weight: bold; }
+
+/* AI 모니터 */
+#ai-monitor { background: #0d1117; border: 1px solid #30363d; padding: 10px; border-radius: 8px; margin-top: auto; }
+.console-text { color: #8b949e; font-size: 0.8em; min-height: 1.2em; font-style: italic; }
+#action-text { font-weight: bold; color: #f0f6fc; margin: 8px 0; }
+.loader-bg { width: 100%; height: 4px; background: #21262d; }
+.loader { height: 100%; width: 0%; background: #58a6ff; transition: width 0.1s linear; }
+
+/* 관계 리스트 */
+#relationship-list { list-style: none; padding: 0; margin: 0; }
+.rel-card { background: #21262d; margin-bottom: 6px; padding: 8px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
+.rel-name { font-weight: bold; font-size: 0.9em; }
+.rel-badge { font-size: 0.7em; padding: 2px 5px; border-radius: 3px; color: #000; font-weight: bold; margin-left: 5px; }
+
+/* 관계 색상 */
+.rb-love { background: #ff7b72; color: #fff; }
+.rb-friend { background: #7ee787; }
+.rb-enemy { background: #8b949e; color: #fff; text-decoration: line-through; }
+.rb-complex { background: #d2a8ff; }
+
+/* 로그 */
+#log-container { height: 140px; overflow-y: auto; background: #010409; border: 1px solid #30363d; padding: 10px; font-size: 0.8em; margin-top: 15px; }
+#event-log { list-style: none; padding: 0; margin: 0; }
+#event-log li { padding: 3px 0; border-bottom: 1px solid #21262d; color: #8b949e; }
+.log-crime { color: #ff7b72 !important; font-weight: bold; }
+.log-justice { color: #58a6ff !important; font-weight: bold; }
+.log-social { color: #d2a8ff !important; }
