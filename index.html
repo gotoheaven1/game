@@ -2,32 +2,66 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text Sims Life</title>
+    <title>Sim Universe: Complete Edition</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="game-container">
-        <h1>심즈 텍스트 라이프 💎</h1>
-        
-        <div id="status-panel">
-            <div class="stat">허기: <span id="hunger">100</span>%</div>
-            <div class="stat">에너지: <span id="energy">100</span>%</div>
-            <div class="stat">재미: <span id="fun">100</span>%</div>
-            <div class="stat">자금: <span id="money">1000</span>§</div>
+        <header>
+            <h1>🧬 Sim Social Universe</h1>
+            
+            <div id="control-panel">
+                <label>👁 관찰 대상:</label>
+                <select id="sim-selector"></select>
+            </div>
+
+            <div id="sim-profile">
+                <div class="profile-row">
+                    <span id="sim-name" class="highlight">이름</span>
+                    <span id="sim-trait" class="badge">성격</span>
+                    <span id="sim-job" class="badge">직업</span>
+                    <span id="sim-criminal" class="badge hidden">🚨 전과자</span>
+                </div>
+                <div class="location-row">
+                    📍 현재 위치: <span id="current-location" class="loc-text">-</span>
+                </div>
+            </div>
+        </header>
+
+        <div id="main-view">
+            <div id="dashboard">
+                <div class="stats-container">
+                    <div class="stat-box">
+                        <label>💰 자산</label>
+                        <div class="value-text" id="money-text">0원</div>
+                    </div>
+                    <div class="stat">🍖 허기 <div class="bar"><div id="hunger-bar"></div></div></div>
+                    <div class="stat">⚡ 에너지 <div class="bar"><div id="energy-bar"></div></div></div>
+                    <div class="stat">🚿 위생 <div class="bar"><div id="hygiene-bar"></div></div></div>
+                    <div class="stat">🎮 재미 <div class="bar"><div id="fun-bar"></div></div></div>
+                    <div class="stat">💬 사교 <div class="bar"><div id="social-bar"></div></div></div>
+                    <div class="stat">⚖️ 도덕성 <div class="bar"><div id="moral-bar"></div></div></div>
+                </div>
+                
+                <div id="ai-monitor">
+                    <h3>🧠 AI Neural Log</h3>
+                    <p id="thought-process" class="console-text">시스템 초기화 중...</p>
+                    <hr>
+                    <p id="action-text">대기 중...</p>
+                    <div class="loader-bg"><div class="loader" id="action-loader"></div></div>
+                </div>
+            </div>
+
+            <div id="social-panel">
+                <h3>💞 인간관계 (Social Graph)</h3>
+                <ul id="relationship-list">
+                    </ul>
+            </div>
         </div>
 
         <div id="log-container">
-            <ul id="game-log">
-                <li>게임을 시작합니다! 오늘 하루는 어떨까요?</li>
-            </ul>
-        </div>
-
-        <div id="action-panel">
-            <button onclick="performAction('eat')">🍕 식사하기</button>
-            <button onclick="performAction('sleep')">🛌 잠자기</button>
-            <button onclick="performAction('work')">💼 출근하기</button>
-            <button onclick="performAction('play')">🎮 게임하기</button>
+            <h3>📝 통합 사건 일지</h3>
+            <ul id="event-log"></ul>
         </div>
     </div>
     <script src="script.js"></script>
